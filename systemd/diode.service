@@ -1,0 +1,40 @@
+[Unit]
+Description=Data Diode Gateway — one transfer cycle
+After=diode-safe.service network.target
+Requires=diode-safe.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/diode-controller.py --config /etc/diode/diode.conf --once
+User=root
+Group=root
+TimeoutStartSec=3600
+
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectHome=yes
+ProtectSystem=strict
+ReadWritePaths=/var/lib/diode /var/log/diode /run/diode /etc/diode
+ProtectKernelTunables=no
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX AF_NETLINK
+RestrictNamespaces=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+SystemCallFilter=@system-service @network-io
+SystemCallArchitectures=native
+CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_RAW CAP_DAC_READ_SEARCH CAP_SETUID CAP_SETGID
+UMask=0077
+
+# Fail-closed: any stop / kill / crash forces both links down and
+# re-applies a self-contained default-DROP ruleset (inline so that a
+# missing /etc/nftables-diode.conf cannot leave the firewall open).
+ExecStopPost=-/bin/sh -c 'ip link set dev eth0 down 2>/dev/null || true'
+ExecStopPost=-/bin/sh -c 'ip link set dev eth1 down 2>/dev/null || true'
+ExecStopPost=-/bin/sh -c 'nft delete table inet diode 2>/dev/null || true'
+ExecStopPost=-/bin/sh -c 'nft -f /etc/nftables-diode.conf 2>/dev/null || { nft add table inet diode; nft add chain inet diode input  "{ type filter hook input  priority 0; policy drop; }"; nft add chain inet diode output "{ type filter hook output priority 0; policy drop; }"; nft add chain inet diode forward "{ type filter hook forward priority 0; policy drop; }"; }'
+
+[Install]
+WantedBy=multi-user.target

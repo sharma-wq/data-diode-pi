@@ -1,0 +1,21 @@
+[Unit]
+Description=Data Diode — fail-closed boot lockdown
+DefaultDependencies=no
+After=local-fs.target
+Before=diode.service diode.timer
+Wants=network-pre.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+
+# Bring both interfaces DOWN before anything else runs.
+ExecStart=-/bin/sh -c 'ip link set dev eth0 down 2>/dev/null || true'
+ExecStart=-/bin/sh -c 'ip link set dev eth1 down 2>/dev/null || true'
+
+# Ensure default-drop ruleset is loaded (idempotent).
+ExecStart=-/bin/sh -c 'nft delete table inet diode 2>/dev/null || true'
+ExecStart=-/bin/sh -c 'nft -f /etc/nftables-diode.conf'
+
+[Install]
+WantedBy=multi-user.target

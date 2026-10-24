@@ -1,0 +1,52 @@
+# ==========================================================================
+# diode.conf — Data Diode Gateway configuration
+# Copy to /etc/diode/diode.conf (mode 0600 root:root) and edit.
+# ==========================================================================
+
+[diode]
+wan_iface          = eth0
+lan_iface          = eth1
+staging_dir        = /var/lib/diode/staging
+quarantine_dir     = /var/lib/diode/quarantine
+archive_dir        = /var/lib/diode/archive
+state_file         = /var/lib/diode/state.json
+lock_file          = /run/diode/diode.lock
+hmac_key_file      = /etc/diode/hmac.key
+log_dir            = /var/log/diode
+max_file_size_mb   = 4096
+allowed_extensions = .csv,.json,.xml,.txt,.gz,.tar,.tgz,.zip
+run_as_user        = diode
+cycle_interval_s   = 60
+
+[fetch]
+url           = https://updates.example.com/export/latest.tar.gz
+tls_ca        = /etc/diode/ca.pem
+timeout_s     = 300
+max_redirects = 2
+
+[push]
+target_host       = 192.168.10.20
+target_user       = diode
+target_path       = /srv/incoming/
+ssh_key           = /etc/diode/id_diode_ed25519
+known_hosts       = /etc/diode/known_hosts
+connect_timeout_s = 20
+
+# ---- Per-application firewall (default DROP everywhere else) ------------
+# Each [firewall.<name>] section describes one named application.
+# install.sh will replace uid = 993 with the actual uid of the 'diode' user.
+
+[firewall.diode-fetch]
+iface     = eth0
+direction = input
+proto     = tcp
+dport     = 443
+# src = 203.0.113.0/24         ; optional source restriction
+
+[firewall.diode-push]
+iface     = eth1
+direction = output
+proto     = tcp
+dport     = 22
+dst       = 192.168.10.20
+uid       = 993

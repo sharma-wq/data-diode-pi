@@ -1,0 +1,12 @@
+[Unit]
+Description=Data Diode Gateway — periodic cycle trigger
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=5min
+AccuracySec=10s
+Unit=diode.service
+Persistent=false
+
+[Install]
+WantedBy=timers.target
