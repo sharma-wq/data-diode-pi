@@ -25,7 +25,7 @@ timeout_s     = 300
 max_redirects = 2
 
 [push]
-target_host       = 192.168.0.112
+target_host       = 192.168.0.023456
 target_user       = diode
 target_path       = /srv/incoming/
 ssh_key           = /etc/diode/id_diode_ed25519
